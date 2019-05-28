@@ -10,8 +10,8 @@ Usage
 DaemonConfigurator из пакета как показано в примере 
 
     # -*- coding: utf-8 -*-    
-    from lib.base_daemon import BaseDaemon
-    from lib.daemon_configurator import DaemonConfigurator
+    from python_sz_daemon.base_daemon import BaseDaemon
+    from python_sz_daemon.daemon_configurator import DaemonConfigurator
     
     
     class ExampleDaemon(BaseDaemon):
