@@ -9,7 +9,7 @@ import datetime
 import abc
 
 
-class BaseDaemon:
+class BaseDaemon(object):
 
     def __init__(self, pidfile, log_name,
                  stdin='/dev/null', stdout='/dev/null', stderr='/dev/null'):
