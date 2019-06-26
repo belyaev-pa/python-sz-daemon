@@ -7,6 +7,7 @@ import signal
 import syslog
 import datetime
 import abc
+import traceback
 
 
 class BaseDaemon(object):
@@ -100,7 +101,13 @@ class BaseDaemon(object):
         # Start the daemon
         syslog.syslog(syslog.LOG_INFO, '{} starting daemon process pid: {}'.format(datetime.datetime.now(), pid))
         self.daemonize()
-        self.run()
+        try:
+            self.run()
+        except BaseException:
+            ex_type, ex, tb = sys.exc_info()
+            for obj in traceback.extract_tb(tb):
+                syslog.syslog(syslog.LOG_ERR, 'Файл: {}, строка: {}, вызов: {}'.format(obj[0], obj[1], obj[2]))
+                syslog.syslog(syslog.LOG_ERR, '----->>>  {}'.format(obj[3]))
 
     sigDict = {}
 
