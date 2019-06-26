@@ -27,7 +27,9 @@ class BaseDaemon(object):
         self.pidfile = pidfile
         self.log_name = log_name
         syslog.openlog(self.log_name)
-        syslog.syslog(syslog.LOG_INFO, '{} Initialising security agent daemon'.format(datetime.datetime.now()))
+        syslog.syslog(syslog.LOG_ERR, '*' * 100)
+        syslog.syslog(syslog.LOG_INFO, 'Инициализация демонизации процесса {}. время: {}'.format(
+            log_name, datetime.datetime.now()))
 
     def daemonize(self):
         """
@@ -42,8 +44,9 @@ class BaseDaemon(object):
                 # exit first parent
                 sys.exit(0)
         except OSError, e:
-            syslog.syslog(syslog.LOG_INFO, '{} fork #1 failed: {}'.format(datetime.datetime.now(), e.errno))
-            sys.exit("fork #1 failed: %d (%s)\n" % (e.errno, e.strerror))
+            msg = "(UNIX)fork #1 был неудачным: %d (%s)\n" % (e.errno, e.strerror)
+            syslog.syslog(syslog.LOG_ERR, msg)
+            sys.exit(msg)
 
         # decouple from parent environment
         os.chdir("/")
@@ -57,8 +60,9 @@ class BaseDaemon(object):
                 # exit from second parent
                 sys.exit(0)
         except OSError, e:
-            syslog.syslog(syslog.LOG_INFO, '{} fork #2 failed: {}'.format(datetime.datetime.now(), e.errno))
-            sys.exit("fork #2 failed: %d (%s)\n" % (e.errno, e.strerror))
+            msg = "(UNIX)fork #2 был неудачным: %d (%s)\n" % (e.errno, e.strerror)
+            syslog.syslog(syslog.LOG_ERR, msg)
+            sys.exit(msg)
 
             # redirect standard file descriptors
         sys.stdout.flush()
@@ -71,13 +75,13 @@ class BaseDaemon(object):
         os.dup2(se.fileno(), sys.stderr.fileno())
 
         # write pidfile
-        syslog.syslog(syslog.LOG_INFO, '{} writing pid file'.format(datetime.datetime.now()))
+        syslog.syslog(syslog.LOG_INFO, 'Pid файл {} записан'.format(self.pidfile))
         atexit.register(self.delpid)
         pid = str(os.getpid())
         file(self.pidfile, 'w+').write("%s\n" % pid)
 
     def delpid(self):
-        syslog.syslog(syslog.LOG_INFO, '{} deleting pid file...'.format(datetime.datetime.now()))
+        syslog.syslog(syslog.LOG_INFO, 'Демон остановлен. Pid файл удален...'.format(datetime.datetime.now()))
         os.remove(self.pidfile)
 
     def start(self):
@@ -93,21 +97,25 @@ class BaseDaemon(object):
             pid = None
 
         if pid:
-            message = "pidfile %s already exist. Daemon already running?\n"
-            syslog.syslog(syslog.LOG_INFO, '{} {}'.format(datetime.datetime.now(), message))
-            sys.stderr.write(message % self.pidfile)
+            message = 'pid файл {} уже существует. Возможно процесс демона уже запущен?'.format(self.pidfile)
+            syslog.syslog(syslog.LOG_INFO, message)
+            sys.stderr.write(message)
             sys.exit(1)
 
         # Start the daemon
-        syslog.syslog(syslog.LOG_INFO, '{} starting daemon process pid: {}'.format(datetime.datetime.now(), pid))
+        syslog.syslog(syslog.LOG_INFO, 'Запускаем процесс демонизации, pid: {}'.format(pid))
         self.daemonize()
         try:
             self.run()
-        except BaseException:
+        except BaseException as err:
+            syslog.syslog(syslog.LOG_ERR, 'Произошла ошибка при вызове функции run демона. Traceback:')
+            syslog.syslog(syslog.LOG_ERR, '-' * 100)
             ex_type, ex, tb = sys.exc_info()
             for obj in traceback.extract_tb(tb):
                 syslog.syslog(syslog.LOG_ERR, 'Файл: {}, строка: {}, вызов: {}'.format(obj[0], obj[1], obj[2]))
                 syslog.syslog(syslog.LOG_ERR, '----->>>  {}'.format(obj[3]))
+            syslog.syslog(syslog.LOG_ERR, 'Ошибка: {}.'.format(err))
+            syslog.syslog(syslog.LOG_ERR, '-' * 100)
 
     sigDict = {}
 
@@ -124,8 +132,8 @@ class BaseDaemon(object):
             pid = None
 
         if not pid:
-            message = "pidfile %s does not exist. Daemon not running?\n"
-            syslog.syslog(syslog.LOG_INFO, '{} {}'.format(datetime.datetime.now(), message))
+            message = "Pid файл {} не найден. Возможно демон не запущен ?".format(self.pidfile)
+            syslog.syslog(syslog.LOG_ERR, message)
             sys.stderr.write(message % self.pidfile)
             return  # not an error in a restart
 
@@ -147,7 +155,7 @@ class BaseDaemon(object):
         """
         Restart the daemon
         """
-        syslog.syslog(syslog.LOG_INFO, '{} restarting daemon process'.format(datetime.datetime.now()))
+        syslog.syslog(syslog.LOG_INFO, 'Перезапускаем процесс демонизации')
         self.stop()
         self.start()
 
