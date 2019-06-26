@@ -104,7 +104,7 @@ class BaseDaemon(object):
             sys.exit(1)
 
         # Start the daemon
-        syslog.syslog(syslog.LOG_INFO, 'Запускаем процесс демонизации, pid: {}'.format(pid))
+        syslog.syslog(syslog.LOG_INFO, 'Запускаем процесс демонизации.')
         self.daemonize()
         try:
             self.run()
