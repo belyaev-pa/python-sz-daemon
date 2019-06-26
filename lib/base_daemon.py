@@ -78,6 +78,7 @@ class BaseDaemon(object):
         syslog.syslog(syslog.LOG_INFO, 'Pid файл {} записан'.format(self.pidfile))
         atexit.register(self.delpid)
         pid = str(os.getpid())
+        syslog.syslog(syslog.LOG_INFO, 'Pid процесса: {}'.format(pid))
         file(self.pidfile, 'w+').write("%s\n" % pid)
 
     def delpid(self):
