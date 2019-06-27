@@ -28,8 +28,7 @@ class BaseDaemon(object):
         self.log_name = log_name
         syslog.openlog(self.log_name)
         syslog.syslog(syslog.LOG_ERR, '*' * 100)
-        syslog.syslog(syslog.LOG_INFO, 'Инициализация демонизации процесса {}. время: {}'.format(
-            log_name, datetime.datetime.now()))
+        syslog.syslog(syslog.LOG_INFO, 'Инициализация демонизации процесса {}'.format(log_name))
 
     def daemonize(self):
         """
