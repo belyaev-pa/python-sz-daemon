@@ -10,6 +10,16 @@ import abc
 import traceback
 
 
+def check_pid(pid):
+    """ Check For the existence of a unix pid. """
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    else:
+        return True
+
+
 class BaseDaemon(object):
 
     def __init__(self, pidfile, log_name,
@@ -67,6 +77,8 @@ class BaseDaemon(object):
         # write pidfile
         syslog.syslog(syslog.LOG_INFO, 'Pid файл {} записан'.format(self.pidfile))
         atexit.register(self.delpid)
+        signal.signal(signal.SIGTERM, self.delpid)
+        signal.signal(signal.SIGINT, self.delpid)
         pid = str(os.getpid())
         syslog.syslog(syslog.LOG_INFO, 'Pid процесса: {}'.format(pid))
         with open(self.pidfile, 'w+') as pid_file:
@@ -87,8 +99,8 @@ class BaseDaemon(object):
         except IOError:
             pid = None
 
-        if pid:
-            message = 'pid файл {} уже существует. Возможно процесс демона уже запущен?'.format(self.pidfile)
+        if pid is not None and check_pid(pid):
+            message = 'pid файл {} уже существует и процесс демона уже запущен?'.format(self.pidfile)
             syslog.syslog(syslog.LOG_INFO, message)
             sys.stderr.write(message)
             sys.exit(1)
